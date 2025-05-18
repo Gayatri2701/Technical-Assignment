@@ -1,147 +1,298 @@
 # Technical-Assignment
 Employees Compensation Forecasting Application 
 
-A Full-Stack Application Using Streamlit & MySQL
+A Full-Stack Business Application with Streamlit + MySQL
 
----
+───────────────────────────────────────────────────────────────
+Sections:
 
-## Table of Contents
+1. Tools and Technologies Used  
+2. Initial Data Preparation Using Excel  
+3. How to Set Up the Database and Run the Application  
+4. Description of Each User Story and How It Is Fulfilled  
+5. Optional: Screenshots
+6. Recommendations
 
-1. Tools and Technologies Used
-2. How to Set Up the Database and Run the Application
-3. Description of Each User Story and How It Is Fulfilled
-4. Optional: Screenshots
-
----
+───────────────────────────────────────────────────────────────
 
 ## 1. Tools and Technologies Used
 
-### 1.1 Frontend
+Frontend:
 
-* Python 3.8+: Primary language for building the Streamlit app.
-* Streamlit: Interactive web interface with charts, filters, and buttons.
-* Pandas: Data handling and manipulation.
-* openpyxl: To read Excel (.xlsx) files.
-* mysql-connector-python: To connect to MySQL (optional if not reading Excel).
+- Python 3.8+:
 
-### 1.2 Backend
+  - Used to develop the entire Streamlit application.  
+  - Handles data manipulation (with pandas), business logic, and interaction with backend SQL procedures.
 
-* MySQL 8+: Relational database for normalized employee data.
-* Stored Procedures:
+- Streamlit:
 
-  * `FilterEmployees`: Filter based on role, location, and status.
-  * `CalculateAverageCompensation`: Group-wise aggregation.
-  * `ApplyIncrement`: Apply compensation increments.
-  * `GetFilteredData`: Full exportable dataset.
-* MySQL Workbench: GUI to manage SQL scripts.
+  - Web application framework that allows fast development of browser-based dashboards with minimal code.  
+  - Renders charts, filter widgets, metric displays, tables, and download buttons.
 
-### 1.3 Data Sources
+- pandas:
 
-* Excel or CSV: Source files with employee data.
+  - Performs DataFrame transformations, filtering, grouping, and compensation simulations.  
+  - Reads from Excel (.xlsx) and prepares data for display and export.
 
-### 1.4 Directory Structure
+- openpyxl:
+
+  - Required by pandas to read Excel files into DataFrames.
+
+- mysql-connector-python (optional):
+
+  - Enables the Streamlit frontend to call stored procedures directly in MySQL if Excel import is not used.
+
+Backend:
+
+- MySQL:
+
+  - Relational database used to store employee data in a normalized format.  
+  - Ensures referential integrity across Role, Location, TurnoverStatus, Employee, and Compensation tables.  
+  - Data is imported from a staging table.
+
+- SQL Scripts:
+
+  - `database creation and data import.sql`  
+  - `Normalize table creation and adding records.sql`  
+  - `procedures.sql`
+
+- Stored Procedures:
+
+  - Encapsulate reusable business logic such as filtering employees, calculating average compensation, and applying increments.
+
+───────────────────────────────────────────────────────────────
+
+## 2. Initial Data Preparation Using Excel
+
+Before importing the data into the MySQL backend and building the Streamlit dashboard, thorough data cleaning and preliminary analysis were performed using Microsoft Excel to ensure data accuracy and enrich the dataset.
+
+Steps and Techniques Used:
+
+- Data Cleaning:
+
+  - Removed empty and irrelevant columns to reduce noise.  
+  - Filled missing values in the Years of Experience column to maintain data consistency.
+
+- Data Enrichment:
+
+  - Merged external industry compensation data to benchmark employee salaries.  
+  - Added calculated columns for:  
+    - Bonus Eligibility: 10% of base compensation.  
+    - Stock Units Eligibility: 10% of base compensation.
+
+- Total Compensation Calculation:
+
+  - Computed a new Total Compensation column by summing base salary, bonus, and stock units.
+
+- Pivot Table Analysis:
+
+  - Summarized key HR metrics such as:  
+    - Employee exits by Location and Role.  
+    - Turnover percentage by department and geography.
+
+- Excel Formulas Used:
+
+  - Utilized formulas like IF(), VLOOKUP(), SUM(), and conditional aggregation to automate calculations and create dynamic reports.
+
+This Excel-driven data preparation was critical in producing a clean, enriched dataset that feeds into the normalized MySQL schema and drives the business logic and visualizations within the Streamlit application.
+
+───────────────────────────────────────────────────────────────
+
+## 3. How to Set Up the Database and Run the Application
+
+### 3.1. Set Up the MySQL Backend
+
+Step 1: Install MySQL Server & Workbench  
+→ https://dev.mysql.com/downloads/mysql/  
+→ Install MySQL Workbench for GUI
+
+Step 2: Run Scripts in Order
+
+A. `database creation and data import.sql`
+
+- Creates the EmployeeDB schema and a StagingEmployee table.  
+- Loads raw employee data from a local CSV (adjust the path to your local system).  
+- Use `SET GLOBAL local_infile = 1;` if needed.
+
+B. `Normalize table creation and adding records.sql`
+
+- Creates the following normalized tables:  
+  - Role, Location, TurnoverStatus  
+  - Employee (contains FK references to RoleID, LocationID, StatusID)  
+  - Compensation (stores salary, bonus, stock data)  
+- Populates the normalized tables using `INSERT ... SELECT JOIN` logic from the staging table.
+
+C. `procedures.sql`
+
+- Creates four stored procedures:  
+  1. FilterEmployees(p_RoleID, p_LocationID, p_IncludeInactive)  
+  2. CalculateAverageCompensation()  
+  3. ApplyIncrement(p_Percent)  
+  4. GetFilteredData()
+
+### 3.2. Set Up the Frontend (Streamlit)
+
+Step 1: Install Python 3.8+  
+→ https://www.python.org/downloads/
+
+Step 2: Install Required Packages
+
+```bash
+pip install streamlit pandas openpyxl mysql-connector-python
 
 ```
-project/
-├── employee_dashboard.py
-├── employee_data.xlsx
-├── sql/
-│   ├── database creation and data import.sql
-│   ├── Normalize table creation and adding records.sql
-│   └── procedures.sql
-├── README.md
-└── screenshots/
+
+Step 3: File Placement
+
+Save employee_dashboard.py in your working directory.
+
+Save employee_data.xlsx or EmployeeData.csv in the path specified in the code (e.g., C:\Users\Poornesh S\Downloads\employee_data.xlsx).
+
+Step 4: Run the App
+
+```bash
+streamlit run employee_dashboard.py
 ```
+
+### 4. Description of Each User Story and How It Is Fulfilled
+
+
+### USER STORY 1: Filter and Display Active Employees by Role
+
+As a user, I should be able to:
+
+- Filter employees by Role
+- Select a Location and view average compensation
+- View a bar chart comparing compensation across locations
+- Toggle to include/exclude inactive employees
+- View fields: Name, Role, Location, Compensation
+
+####  Streamlit Implementation
+
+- `st.multiselect("Role")` filters roles:
+  ```python
+  df[df["Role"].isin(selected_roles)]
+
+* `st.selectbox("Location")` filters and calculates:
+
+  ```python
+  df[df["Location"] == selected_location]["Current Comp (INR)"].mean()
+  ```
+
+* Checkbox toggles whether inactive employees (`Active? == "N"`) are included
+
+* `st.metric()` displays average compensation of selected location
+
+* `st.bar_chart()` shows compensation comparison across locations using `groupby`
+
+#### 🛠️ SQL Integration (Optional)
+
+* Stored Procedure: `CALL FilterEmployees(roleID, locationID, includeInactive)`
+* Stored Procedure: `CALL CalculateAverageCompensation()`
+
+These allow server-side filtering and compensation average calculation if integrated with MySQL.
 
 ---
 
-## 2. How to Set Up the Database and Run the Application
+### USER STORY 2: Group Employees by Years of Experience
 
-### 2.1 Database Setup
+**As a user, I should be able to:**
 
-1. Install MySQL and MySQL Workbench.
-2. Run the following SQL scripts in order:
+* View employee counts in experience ranges
+* Group them optionally by Role or Location
 
-   * database creation and data import.sql
-   * Normalize table creation and adding records.sql
-   * procedures.sql
-3. Ensure LOAD DATA INFILE is enabled:
+####  Streamlit Implementation
 
-   ```sql
-   SET GLOBAL local_infile = 1;
-   ```
-4. Update file path in script to your CSV location.
+* Uses `.value_counts()` on `'Years of Experience'` for overall distribution
+* Advanced grouping using:
 
-### 2.2 Streamlit Frontend Setup
+  ```python
+  df.groupby(['Years of Experience', group_by_option])
+  ```
+* Displays results with `st.bar_chart()`
 
-1. Install Python and required packages:
+####  Business Logic
 
-   ```bash
-   pip install streamlit pandas openpyxl mysql-connector-python
-   ```
-2. Place employee\_dashboard.py and employee\_data.xlsx correctly.
-3. Run the app:
-
-   ```bash
-   streamlit run employee_dashboard.py
-   ```
-
-### 2.3 (Optional) Connect Streamlit to MySQL
-
-Replace Excel load logic with:
-
-```python
-import mysql.connector
-conn = mysql.connector.connect(
-    host='localhost', user='root', password='yourpassword', database='EmployeeDB')
-cursor = conn.cursor(dictionary=True)
-cursor.execute("CALL GetFilteredData();")
-df = pd.DataFrame(cursor.fetchall())
-```
-
-### 2.4 (Optional) Persist Increments to DB
-
-Add this logic under Apply Increment:
-
-```python
-if st.button("Apply Increment to DB"):
-    cursor.execute("CALL ApplyIncrement(%s)", (percent,))
-    conn.commit()
-```
+* Assumes experience data in string ranges like `"0-1"`, `"1-2"` etc.
+* Preserves consistent labeling without converting to numeric bins
+* Optional enhancement: implement SQL `GROUP BY` queries for grouping
 
 ---
 
-## 3. Description of Each User Story and Fulfillment
+### USER STORY 3: Simulate Compensation Increments
 
-### User Story 1: Filter by Role, Location, Status
+As a user, I should be able to:
 
-* Filters: Role, Location, Include Inactive?
-* Metrics: Avg Compensation in selected Location
-* Chart: Bar chart of avg comp across all locations
-* Procedure: `FilterEmployees`, `CalculateAverageCompensation`
+* Apply a global % increment
+* View old vs. new compensation side by side
+* (Bonus) Define custom % increments per Location or per Employee
 
-### User Story 2: Group by Experience
+#### Streamlit Implementation
 
-* Groups by 'Years of Experience' (e.g., 1-2, 2-3)
-* Optional breakdown: by Location or Role
-* Pandas logic + Streamlit bar\_chart
+* `st.radio()` lets user select increment mode:
 
-### User Story 3: Simulate Increments
+  * Global %
+  * Per Location %
+  * Per Employee %
 
-* Modes: Global %, Per Location %, Per Employee %
-* Output: Current vs. New Compensation side-by-side
-* Bonus: Bonus = 10%, Stock = 12%, Total = All
-* Optional: `ApplyIncrement` procedure to persist
+* `st.slider()` allows user to input % value
 
-### User Story 4: Download Data
+* Compensation updated with:
 
-* Filter: Active Status (All, Y, N)
-* Output: Export filtered table to CSV
-* Procedure: `GetFilteredData`
+  ```python
+  df["New Comp (INR)"] = df["Current Comp (INR)"] * (1 + percent / 100)
+  ```
+
+####  SQL Integration (Optional)
+
+* Stored Procedure: `CALL ApplyIncrement(10.00)` updates:
+
+  * `CurrentComp`
+  * `Bonus = 10% of New Comp`
+  * `StockUnits = 12% of New Comp`
+  * `TotalComp = Comp + Bonus + Stock`
+
+* To apply increment from frontend:
+
+  ```python
+  if st.button("Apply Increment to DB"):
+      cursor.execute("CALL ApplyIncrement(%s)", (global_percent,))
+      conn.commit()
+  ```
 
 ---
 
-## 4. Screenshots
+### USER STORY 4: Download Filtered Employee Data
+
+**As a user, I should be able to:**
+
+* Export filtered employee data to CSV
+* Include: Name, Role, Location, Experience, Compensation, Status
+* Include simulated `"New Comp"` if available
+
+#### Streamlit Implementation
+
+* `st.selectbox()` to filter status (Active, Inactive, All)
+* Filtered data displayed using `st.dataframe()`
+* Export enabled via:
+
+  ```python
+  st.download_button("Download CSV", df.to_csv().encode("utf-8"), ...)
+  ```
+
+#### 🛠 SQL Integration (Optional)
+
+* Stored Procedure: `CALL GetFilteredData()`
+
+Optional enhancement: use `openpyxl` or `xlsxwriter` to create downloadable Excel with formatting and formulas.
+
+---
+
+```
+```
+
+
+## 5. Screenshots
 
 Place your screenshots in the /screenshots folder and reference them below:
 
@@ -155,4 +306,44 @@ Place your screenshots in the /screenshots folder and reference them below:
 ```
 
 ---
+
+### 6. Recommendations 
+
+
+### 1. Integrate Role-Based Access Control (RBAC)
+
+Why: Different stakeholders (e.g., HR, Managers, Executives) may need different levels of data access and actions (e.g., view only, apply increments, download data).
+
+How:
+
+* Use Streamlit authentication or an external login mechanism (like Firebase Auth or simple login page).
+* Set permissions based on roles (e.g., `can_edit`, `can_download`).
+
+---
+
+###  2. Add Dynamic Visualizations for Time-Series Trends
+
+Why: Compensation decisions benefit from historical trends (e.g., past increments, hiring patterns).
+
+How:
+
+* Add a date column for employee joining or increment update.
+* Use `st.line_chart()` or `plotly` for trend analysis over months/quarters.
+* Optionally filter by date range using `st.date_input()`.
+
+---
+
+###  3. Automate Reporting & Email Integration
+
+Why: Stakeholders may want periodic compensation summaries without logging in.
+
+How:
+
+* Use Python’s `smtplib` or integration tools like SendGrid to schedule emails.
+* Convert filtered dashboards to PDF/Excel and send reports automatically.
+
+---
+
+
+
 
