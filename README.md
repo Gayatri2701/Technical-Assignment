@@ -145,14 +145,14 @@ pip install streamlit pandas openpyxl mysql-connector-python
 
 Step 3: File Placement
 
-Save employee_dashboard.py in your working directory.
+Save app.py and employee_data.xlsx in your working directory.
 
-Save employee_data.xlsx or EmployeeData.csv in the path specified in the code (e.g., C:\Users\Poornesh S\Downloads\employee_data.xlsx).
+(e.g., C:\Users\USER\employee_data.xlsx, C:\Users\USER\app.py).
 
-Step 4: Run the App
+Step 4: Run the App in the Command Prompt
 
 ```bash
-streamlit run employee_dashboard.py
+streamlit run app.py
 ```
 
 ### 4. Description of Each User Story and How It Is Fulfilled
