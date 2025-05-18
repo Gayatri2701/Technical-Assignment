@@ -4,6 +4,7 @@ Employees Compensation Forecasting Application
 A Full-Stack Business Application with Streamlit + MySQL
 
 ───────────────────────────────────────────────────────────────
+
 Sections:
 
 1. Tools and Technologies Used  
